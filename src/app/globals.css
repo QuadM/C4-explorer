@@ -1,26 +1,94 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 @import "tailwindcss";
 
+/* ─── Typography ─────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-inter: "Inter", sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─── Base Reset ─────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html,
+body,
+#__next {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #020817;
+  color: #f1f5f9;
+  font-family: var(--font-inter), sans-serif;
+}
+
+/* ─── Scrollbar Styling ──────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* ─── React Flow Overrides ───────────────────────────────── */
+.react-flow__renderer {
+  background: transparent !important;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2;
+}
+
+/* Remove white backgrounds from React Flow controls */
+.react-flow__controls {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__controls button {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid #1e293b !important;
+  color: #94a3b8 !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.react-flow__controls button:hover {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+.react-flow__minimap {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* ─── Dash animation for edges ───────────────────────────── */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -30;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ─── Node card hover glow ───────────────────────────────── */
+.react-flow__node:hover {
+  z-index: 10;
+}
+
+/* ─── Selections ─────────────────────────────────────────── */
+.react-flow__node.selected > div {
+  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline-offset: 2px;
 }
