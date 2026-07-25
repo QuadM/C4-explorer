@@ -51,7 +51,7 @@ interface TreeItemProps {
 const TreeItem = ({ node, depth }: TreeItemProps) => {
   const [isOpen, setIsOpen] = useState(depth < 2); // Auto-expand domains and systems
   const selectNode = useArchitectureStore((state) => state.selectNode);
-  const drillDown = useArchitectureStore((state) => state.drillDown);
+  const toggleNodeExpanded = useArchitectureStore((state) => state.toggleNodeExpanded);
   const selectedNodeId = useArchitectureStore((state) => state.selectedNodeId);
   const currentPath = useArchitectureStore((state) => state.currentPath);
 
@@ -74,12 +74,12 @@ const TreeItem = ({ node, depth }: TreeItemProps) => {
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (hasChildren) {
-      drillDown(node.id);
+      toggleNodeExpanded(node.id);
     }
   };
 
   return (
-    <div className="select-none">
+    <div className="select-none p-4">
       <div
         className={`flex items-center gap-1.5 py-1 px-2 rounded-lg text-xs cursor-pointer transition-colors duration-150 ${
           isSelected

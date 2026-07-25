@@ -10,8 +10,8 @@
 /* ─── Base Reset ─────────────────────────────────────────── */
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  /* margin: 0; */
+  /* padding: 0; */
 }
 
 html,
@@ -30,13 +30,16 @@ body,
   width: 5px;
   height: 5px;
 }
+
 ::-webkit-scrollbar-track {
   background: #0f172a;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 99px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
@@ -88,7 +91,7 @@ body,
 }
 
 /* ─── Selections ─────────────────────────────────────────── */
-.react-flow__node.selected > div {
+.react-flow__node.selected>div {
   outline: 2px solid rgba(56, 189, 248, 0.6);
   outline-offset: 2px;
 }

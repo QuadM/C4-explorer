@@ -49,7 +49,7 @@ const colorMap: Record<NodeType, string> = {
 export function SidePanel() {
   const selectedNodeId = useArchitectureStore((state) => state.selectedNodeId);
   const selectNode = useArchitectureStore((state) => state.selectNode);
-  const drillDown = useArchitectureStore((state) => state.drillDown);
+  const toggleNodeExpanded = useArchitectureStore((state) => state.toggleNodeExpanded);
   const getNodeById = useArchitectureStore((state) => state.getNodeById);
   const allRelationships = useArchitectureStore((state) => state.allRelationships);
 
@@ -188,7 +188,7 @@ export function SidePanel() {
           </div>
 
           {selectedNode.tags && selectedNode.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2 select-none">
+            <div className="flex flex-wrap gap-1 mt-2 select-none p-4">
               {selectedNode.tags.map((tag) => (
                 <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">
                   #{tag}
@@ -200,7 +200,7 @@ export function SidePanel() {
 
         {/* Direct Children List */}
         {selectedNode.children && selectedNode.children.length > 0 && (
-          <div className="space-y-2">
+          <div className="  space-y-2">
             <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider select-none">Children Elements</div>
             <div className="grid grid-cols-1 gap-1.5">
               {selectedNode.children.map((child) => {
@@ -211,7 +211,7 @@ export function SidePanel() {
                   <div
                     key={child.id}
                     onClick={() => selectNode(child.id)}
-                    className="flex items-center justify-between p-2 rounded-lg border border-slate-900 bg-slate-900/10 hover:bg-slate-900/40 hover:border-slate-800 text-xs cursor-pointer group transition-all duration-150"
+                    className="flex items-center justify-between p-4 rounded-lg border border-slate-900 bg-slate-900/10 hover:bg-slate-900/40 hover:border-slate-800 text-xs cursor-pointer group transition-all duration-150"
                   >
                     <div className="flex items-center gap-2">
                       <div className={`p-1 rounded border ${childColor.split(" ")[0]} ${childColor.split(" ")[2]}`}>
@@ -223,11 +223,11 @@ export function SidePanel() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          drillDown(child.id);
+                          toggleNodeExpanded(child.id);
                         }}
                         className="p-1 rounded bg-slate-900/80 hover:bg-slate-800 text-slate-500 hover:text-slate-300 text-[10px] font-medium flex items-center gap-0.5 select-none"
                       >
-                        Drill Down
+                        Expand
                         <ChevronRight className="w-3 h-3" />
                       </button>
                     )}
@@ -239,21 +239,21 @@ export function SidePanel() {
         )}
 
         {/* Relationships Panel */}
-        <div className="space-y-4">
+        <div className="  space-y-4">
           <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1 border-b border-slate-900 pb-1.5 select-none">
             <ArrowRightLeft className="w-3.5 h-3.5 text-sky-400" /> System Connections
           </div>
 
           {/* Outbound Connections */}
-          <div className="space-y-2">
+          <div className="  space-y-2">
             <h4 className="text-[10px] font-bold text-slate-400 select-none uppercase">Outbound ({nodeConnections.outbound.length})</h4>
             {nodeConnections.outbound.length > 0 ? (
-              <div className="space-y-2">
+              <div className="  space-y-2">
                 {nodeConnections.outbound.map((rel) => {
                   const targetNode = getNodeById(rel.targetId);
                   const sourceNode = getNodeById(rel.sourceId);
                   return (
-                    <div key={rel.id} className="text-xs bg-slate-900/20 border border-slate-900 p-2.5 rounded-lg space-y-1">
+                    <div key={rel.id} className="text-xs bg-slate-900/20 border border-slate-900 p-4 rounded-lg   space-y-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span onClick={() => selectNode(rel.sourceId)} className="font-semibold text-sky-400 hover:underline cursor-pointer">
                           {sourceNode?.name || rel.sourceId}
@@ -279,15 +279,15 @@ export function SidePanel() {
           </div>
 
           {/* Inbound Connections */}
-          <div className="space-y-2">
+          <div className="  space-y-2">
             <h4 className="text-[10px] font-bold text-slate-400 select-none uppercase">Inbound ({nodeConnections.inbound.length})</h4>
             {nodeConnections.inbound.length > 0 ? (
-              <div className="space-y-2">
+              <div className="  space-y-2">
                 {nodeConnections.inbound.map((rel) => {
                   const sourceNode = getNodeById(rel.sourceId);
                   const targetNode = getNodeById(rel.targetId);
                   return (
-                    <div key={rel.id} className="text-xs bg-slate-900/20 border border-slate-900 p-2.5 rounded-lg space-y-1">
+                    <div key={rel.id} className="text-xs bg-slate-900/20 border border-slate-900 p-4 rounded-lg   space-y-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span onClick={() => selectNode(rel.sourceId)} className="font-semibold text-sky-400 hover:underline cursor-pointer">
                           {sourceNode?.name || rel.sourceId}
@@ -315,7 +315,7 @@ export function SidePanel() {
 
         {/* Documentation Section */}
         {selectedNode.documentation && (
-          <div className="space-y-2 border-t border-slate-900 pt-5">
+          <div className="  space-y-2 border-t border-slate-900 pt-5">
             <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1 select-none">
               <FileCode className="w-3.5 h-3.5 text-sky-400" /> Technical Documentation
             </div>
@@ -343,11 +343,11 @@ export function SidePanel() {
         )}
 
         {/* Live Metrics Panel */}
-        <div className="space-y-3 border-t border-slate-900 pt-5">
+        <div className="  space-y-3 border-t border-slate-900 pt-5">
           <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1 select-none">
             <TrendingUp className="w-3.5 h-3.5 text-sky-400" /> Diagnostics & Metrics
           </div>
-          <div className="bg-slate-900/40 border border-slate-900 p-3.5 rounded-lg space-y-2.5 select-none">
+          <div className="bg-slate-900/40 border border-slate-900 p-3.5 rounded-lg   space-y-2.5 select-none">
             <div className="flex items-center justify-between text-[10px]">
               <span className="text-slate-400">Response SLA:</span>
               <span className="font-semibold text-emerald-400 font-mono">99.98% uptime (24ms p95)</span>
@@ -363,7 +363,7 @@ export function SidePanel() {
         </div>
 
         {/* Plugins / DevOps Integrations */}
-        <div className="space-y-3 border-t border-slate-900 pt-5">
+        <div className="  space-y-3 border-t border-slate-900 pt-5">
           <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1 select-none">
             <GitBranch className="w-3.5 h-3.5 text-sky-400" /> Devops Integrations
           </div>

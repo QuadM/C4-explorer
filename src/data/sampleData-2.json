@@ -1,0 +1,1150 @@
+{
+  "id": "enterprise-root",
+  "name": "GlobalCorp XX Enterprise",
+  "type": "enterprise",
+  "description": "Enterprise-wide architecture for GlobalCorp's digital banking platform.",
+  "technology": "Multi-Cloud (AWS + Azure)",
+  "tags": [
+    "enterprise",
+    "banking",
+    "fintech"
+  ],
+  "status": "active",
+  "documentation": "# GlobalCorp Enterprise Architecture\n\nGlobalCorp operates a modern cloud-native banking platform across three core business domains.\n\n## Design Principles\n- Event-driven microservices\n- Zero-trust security\n- Multi-region active-active deployment\n\n\"\"\"mermaid\ngraph LR\n  A[Core Banking] --> B[Payments]\n  B --> C[Customer Platform]\n  A --> C\n\"\"\"\n",
+  "children": [
+    {
+      "id": "domain-banking",
+      "name": "Core Banking",
+      "type": "domain",
+      "description": "Ledger, accounts, and financial transaction processing domain.",
+      "technology": "Java / Kotlin",
+      "tags": [
+        "banking",
+        "ledger",
+        "critical"
+      ],
+      "status": "active",
+      "ownership": "Banking Platform Team",
+      "environment": "production",
+      "relationships": [
+        {
+          "id": "rel-banking-payments",
+          "sourceId": "domain-banking",
+          "targetId": "domain-payments",
+          "type": "communicates_with",
+          "description": "Initiates payment transactions",
+          "technology": "gRPC"
+        },
+        {
+          "id": "rel-banking-customer",
+          "sourceId": "domain-banking",
+          "targetId": "domain-customer",
+          "type": "uses",
+          "description": "Reads customer identity",
+          "technology": "REST/HTTPS"
+        }
+      ],
+      "children": [
+        {
+          "id": "sys-ledger",
+          "name": "Core Ledger System",
+          "type": "system",
+          "description": "Double-entry accounting ledger managing all financial records.",
+          "technology": "Java 21 / Spring Boot",
+          "tags": [
+            "ledger",
+            "accounting",
+            "critical"
+          ],
+          "status": "active",
+          "ownership": "Core Banking Team",
+          "environment": "production",
+          "documentation": "# Core Ledger System\n\nProvides ACID-compliant double-entry bookkeeping for all accounts.\n\n## Key Features\n- Multi-currency support\n- Real-time balance computation\n- Regulatory reporting (SOX, Basel III)",
+          "relationships": [
+            {
+              "id": "rel-ledger-msgbus",
+              "sourceId": "sys-ledger",
+              "targetId": "cnt-event-bus",
+              "type": "publishes",
+              "description": "Publishes transaction events",
+              "technology": "Kafka"
+            },
+            {
+              "id": "rel-ledger-auth",
+              "sourceId": "sys-ledger",
+              "targetId": "sys-auth",
+              "type": "uses",
+              "description": "Validates JWT tokens",
+              "technology": "HTTPS"
+            }
+          ],
+          "children": [
+            {
+              "id": "cnt-ledger-api",
+              "name": "Ledger API Gateway",
+              "type": "container",
+              "description": "REST/gRPC API layer for ledger operations. Handles auth, rate limiting and routing.",
+              "technology": "Spring Boot + Nginx",
+              "tags": [
+                "api",
+                "gateway"
+              ],
+              "status": "active",
+              "ownership": "Core Banking Team",
+              "environment": "production",
+              "relationships": [
+                {
+                  "id": "rel-ledger-api-svc",
+                  "sourceId": "cnt-ledger-api",
+                  "targetId": "cnt-ledger-svc",
+                  "type": "uses",
+                  "description": "Routes requests to business services",
+                  "technology": "gRPC"
+                }
+              ],
+              "children": [
+                {
+                  "id": "cmp-rate-limiter",
+                  "name": "Rate Limiter",
+                  "type": "component",
+                  "description": "Token bucket rate limiter per client.",
+                  "technology": "Bucket4j",
+                  "tags": [
+                    "security"
+                  ],
+                  "status": "active",
+                  "ownership": "Core Banking Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-auth-filter",
+                  "name": "Auth Filter",
+                  "type": "component",
+                  "description": "Validates Bearer JWT on each request.",
+                  "technology": "Spring Security",
+                  "tags": [
+                    "security"
+                  ],
+                  "status": "active",
+                  "ownership": "Core Banking Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-router",
+                  "name": "Request Router",
+                  "type": "component",
+                  "description": "Routes by resource type to downstream gRPC services.",
+                  "technology": "Spring WebFlux",
+                  "tags": [
+                    "routing"
+                  ],
+                  "status": "active",
+                  "ownership": "Core Banking Team",
+                  "environment": "production"
+                }
+              ]
+            },
+            {
+              "id": "cnt-ledger-svc",
+              "name": "Ledger Service",
+              "type": "container",
+              "description": "Core business logic for double-entry bookkeeping and account management.",
+              "technology": "Kotlin / Spring Boot",
+              "tags": [
+                "business-logic",
+                "core"
+              ],
+              "status": "active",
+              "ownership": "Core Banking Team",
+              "environment": "production",
+              "relationships": [
+                {
+                  "id": "rel-ledger-svc-db",
+                  "sourceId": "cnt-ledger-svc",
+                  "targetId": "cnt-ledger-db",
+                  "type": "writes",
+                  "description": "Persists ledger entries",
+                  "technology": "PostgreSQL"
+                },
+                {
+                  "id": "rel-ledger-svc-cache",
+                  "sourceId": "cnt-ledger-svc",
+                  "targetId": "cnt-ledger-cache",
+                  "type": "reads",
+                  "description": "Reads cached balances",
+                  "technology": "Redis"
+                }
+              ],
+              "children": [
+                {
+                  "id": "cmp-account-svc",
+                  "name": "Account Service",
+                  "type": "component",
+                  "description": "CRUD for bank accounts.",
+                  "technology": "Kotlin",
+                  "tags": [
+                    "accounts"
+                  ],
+                  "status": "active",
+                  "ownership": "Core Banking Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-txn-svc",
+                  "name": "Transaction Processor",
+                  "type": "component",
+                  "description": "Validates and records double-entry transactions.",
+                  "technology": "Kotlin",
+                  "tags": [
+                    "transactions"
+                  ],
+                  "status": "active",
+                  "ownership": "Core Banking Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-balance-svc",
+                  "name": "Balance Calculator",
+                  "type": "component",
+                  "description": "Computes real-time running balances.",
+                  "technology": "Kotlin",
+                  "tags": [
+                    "balances"
+                  ],
+                  "status": "active",
+                  "ownership": "Core Banking Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-reconciler",
+                  "name": "Reconciliation Engine",
+                  "type": "component",
+                  "description": "Nightly reconciliation between ledger and external clearing.",
+                  "technology": "Kotlin",
+                  "tags": [
+                    "reconciliation"
+                  ],
+                  "status": "active",
+                  "ownership": "Core Banking Team",
+                  "environment": "production"
+                }
+              ]
+            },
+            {
+              "id": "cnt-ledger-db",
+              "name": "Ledger PostgreSQL",
+              "type": "container",
+              "description": "Primary relational database for ledger entries.",
+              "technology": "PostgreSQL 15",
+              "tags": [
+                "database",
+                "persistence"
+              ],
+              "status": "active",
+              "ownership": "DBA Team",
+              "environment": "production"
+            },
+            {
+              "id": "cnt-ledger-cache",
+              "name": "Balance Cache",
+              "type": "container",
+              "description": "Redis cluster caching frequently-read balances.",
+              "technology": "Redis Cluster 7",
+              "tags": [
+                "cache",
+                "redis"
+              ],
+              "status": "active",
+              "ownership": "Core Banking Team",
+              "environment": "production"
+            }
+          ]
+        },
+        {
+          "id": "sys-risk",
+          "name": "Risk & Compliance Engine",
+          "type": "system",
+          "description": "Real-time fraud detection, AML screening, and regulatory compliance checks.",
+          "technology": "Python / FastAPI",
+          "tags": [
+            "risk",
+            "aml",
+            "fraud",
+            "compliance"
+          ],
+          "status": "active",
+          "ownership": "Risk Team",
+          "environment": "production",
+          "relationships": [
+            {
+              "id": "rel-risk-ledger",
+              "sourceId": "sys-risk",
+              "targetId": "sys-ledger",
+              "type": "consumes",
+              "description": "Consumes transaction events for analysis",
+              "technology": "Kafka"
+            },
+            {
+              "id": "rel-risk-notify",
+              "sourceId": "sys-risk",
+              "targetId": "sys-notifications",
+              "type": "publishes",
+              "description": "Publishes fraud alerts",
+              "technology": "Kafka"
+            }
+          ],
+          "children": [
+            {
+              "id": "cnt-risk-api",
+              "name": "Risk API",
+              "type": "container",
+              "description": "Exposes risk scoring endpoints.",
+              "technology": "FastAPI + uvicorn",
+              "tags": [
+                "api"
+              ],
+              "status": "active",
+              "ownership": "Risk Team",
+              "environment": "production"
+            },
+            {
+              "id": "cnt-risk-engine",
+              "name": "Rules Engine",
+              "type": "container",
+              "description": "Evaluates transaction risk using ML models and static rules.",
+              "technology": "Python / Drools",
+              "tags": [
+                "ml",
+                "rules"
+              ],
+              "status": "active",
+              "ownership": "Risk Team",
+              "environment": "production",
+              "children": [
+                {
+                  "id": "cmp-aml-screener",
+                  "name": "AML Screener",
+                  "type": "component",
+                  "description": "Screens against OFAC and PEP lists.",
+                  "technology": "Python",
+                  "tags": [
+                    "aml"
+                  ],
+                  "status": "active",
+                  "ownership": "Risk Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-fraud-ml",
+                  "name": "Fraud ML Model",
+                  "type": "component",
+                  "description": "XGBoost model for real-time fraud scoring.",
+                  "technology": "Python / XGBoost",
+                  "tags": [
+                    "ml",
+                    "fraud"
+                  ],
+                  "status": "active",
+                  "ownership": "Risk Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-velocity-check",
+                  "name": "Velocity Checker",
+                  "type": "component",
+                  "description": "Detects unusual transaction velocity.",
+                  "technology": "Python",
+                  "tags": [
+                    "fraud"
+                  ],
+                  "status": "active",
+                  "ownership": "Risk Team",
+                  "environment": "production"
+                }
+              ]
+            },
+            {
+              "id": "cnt-risk-db",
+              "name": "Risk Case Store",
+              "type": "container",
+              "description": "MongoDB storing fraud cases and investigation history.",
+              "technology": "MongoDB 7",
+              "tags": [
+                "database",
+                "nosql"
+              ],
+              "status": "active",
+              "ownership": "Risk Team",
+              "environment": "production"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "domain-payments",
+      "name": "Payments Platform",
+      "type": "domain",
+      "description": "Payment initiation, routing, clearing and settlement domain.",
+      "technology": "Go / Node.js",
+      "tags": [
+        "payments",
+        "pci-dss",
+        "critical"
+      ],
+      "status": "active",
+      "ownership": "Payments Team",
+      "environment": "production",
+      "relationships": [
+        {
+          "id": "rel-payments-customer",
+          "sourceId": "domain-payments",
+          "targetId": "domain-customer",
+          "type": "uses",
+          "description": "Validates recipient accounts",
+          "technology": "REST"
+        }
+      ],
+      "children": [
+        {
+          "id": "sys-payment-processor",
+          "name": "Payment Processor",
+          "type": "system",
+          "description": "Orchestrates card, wire, ACH and instant payment flows.",
+          "technology": "Go / gRPC",
+          "tags": [
+            "payments",
+            "pci-dss"
+          ],
+          "status": "active",
+          "ownership": "Payments Team",
+          "environment": "production",
+          "relationships": [
+            {
+              "id": "rel-proc-ledger",
+              "sourceId": "sys-payment-processor",
+              "targetId": "sys-ledger",
+              "type": "uses",
+              "description": "Posts settlement entries",
+              "technology": "gRPC"
+            },
+            {
+              "id": "rel-proc-bus",
+              "sourceId": "sys-payment-processor",
+              "targetId": "cnt-event-bus",
+              "type": "publishes",
+              "description": "Emits payment lifecycle events",
+              "technology": "Kafka"
+            },
+            {
+              "id": "rel-proc-visa",
+              "sourceId": "sys-payment-processor",
+              "targetId": "sys-ext-card-networks",
+              "type": "communicates_with",
+              "description": "Card authorization via ISO 8583",
+              "technology": "ISO 8583 / TCP"
+            }
+          ],
+          "children": [
+            {
+              "id": "cnt-payment-api",
+              "name": "Payments API",
+              "type": "container",
+              "description": "Public REST API for payment initiation.",
+              "technology": "Go / gin",
+              "tags": [
+                "api",
+                "public"
+              ],
+              "status": "active",
+              "ownership": "Payments Team",
+              "environment": "production",
+              "children": [
+                {
+                  "id": "cmp-idempotency",
+                  "name": "Idempotency Key Handler",
+                  "type": "component",
+                  "description": "Ensures duplicate payment requests are de-duped.",
+                  "technology": "Go",
+                  "tags": [
+                    "idempotency"
+                  ],
+                  "status": "active",
+                  "ownership": "Payments Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-payment-validator",
+                  "name": "Payment Validator",
+                  "type": "component",
+                  "description": "Schema and business rule validation.",
+                  "technology": "Go",
+                  "tags": [
+                    "validation"
+                  ],
+                  "status": "active",
+                  "ownership": "Payments Team",
+                  "environment": "production"
+                }
+              ]
+            },
+            {
+              "id": "cnt-payment-orchestrator",
+              "name": "Payment Orchestrator",
+              "type": "container",
+              "description": "Saga orchestrator managing multi-step payment flows.",
+              "technology": "Go / Temporal",
+              "tags": [
+                "orchestration",
+                "saga"
+              ],
+              "status": "active",
+              "ownership": "Payments Team",
+              "environment": "production",
+              "children": [
+                {
+                  "id": "cmp-saga-engine",
+                  "name": "Saga Engine",
+                  "type": "component",
+                  "description": "Coordinates steps across services with compensating transactions.",
+                  "technology": "Temporal Workflow",
+                  "tags": [
+                    "saga"
+                  ],
+                  "status": "active",
+                  "ownership": "Payments Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-routing-svc",
+                  "name": "Payment Router",
+                  "type": "component",
+                  "description": "Selects optimal payment rail (SWIFT, SEPA, ACH, card).",
+                  "technology": "Go",
+                  "tags": [
+                    "routing"
+                  ],
+                  "status": "active",
+                  "ownership": "Payments Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-settlement-svc",
+                  "name": "Settlement Service",
+                  "type": "component",
+                  "description": "Final settlement instructions to clearing houses.",
+                  "technology": "Go",
+                  "tags": [
+                    "settlement"
+                  ],
+                  "status": "active",
+                  "ownership": "Payments Team",
+                  "environment": "production"
+                }
+              ]
+            },
+            {
+              "id": "cnt-payment-db",
+              "name": "Payments PostgreSQL",
+              "type": "container",
+              "description": "Payments state and audit trail store.",
+              "technology": "PostgreSQL 15",
+              "tags": [
+                "database"
+              ],
+              "status": "active",
+              "ownership": "DBA Team",
+              "environment": "production"
+            },
+            {
+              "id": "cnt-payment-cache",
+              "name": "Payments Redis",
+              "type": "container",
+              "description": "Idempotency keys and session cache.",
+              "technology": "Redis 7",
+              "tags": [
+                "cache"
+              ],
+              "status": "active",
+              "ownership": "Payments Team",
+              "environment": "production"
+            }
+          ]
+        },
+        {
+          "id": "sys-notifications",
+          "name": "Notification Service",
+          "type": "system",
+          "description": "Multi-channel notification hub (email, SMS, push, webhook).",
+          "technology": "Node.js / TypeScript",
+          "tags": [
+            "notifications",
+            "async"
+          ],
+          "status": "active",
+          "ownership": "Platform Team",
+          "environment": "production",
+          "relationships": [
+            {
+              "id": "rel-notif-bus",
+              "sourceId": "sys-notifications",
+              "targetId": "cnt-event-bus",
+              "type": "consumes",
+              "description": "Consumes notification events",
+              "technology": "Kafka"
+            }
+          ],
+          "children": [
+            {
+              "id": "cnt-notif-api",
+              "name": "Notification API",
+              "type": "container",
+              "description": "REST API for direct notification dispatch.",
+              "technology": "Express.js",
+              "tags": [
+                "api"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            },
+            {
+              "id": "cnt-notif-dispatcher",
+              "name": "Notification Dispatcher",
+              "type": "container",
+              "description": "Fan-out service routing notifications to the correct channel.",
+              "technology": "Node.js / Bull",
+              "tags": [
+                "queue",
+                "worker"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production",
+              "children": [
+                {
+                  "id": "cmp-email-adapter",
+                  "name": "Email Adapter",
+                  "type": "component",
+                  "description": "SendGrid integration for transactional email.",
+                  "technology": "SendGrid SDK",
+                  "tags": [
+                    "email"
+                  ],
+                  "status": "active",
+                  "ownership": "Platform Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-sms-adapter",
+                  "name": "SMS Adapter",
+                  "type": "component",
+                  "description": "Twilio integration for SMS OTP and alerts.",
+                  "technology": "Twilio SDK",
+                  "tags": [
+                    "sms"
+                  ],
+                  "status": "active",
+                  "ownership": "Platform Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-push-adapter",
+                  "name": "Push Adapter",
+                  "type": "component",
+                  "description": "Firebase Cloud Messaging for mobile push.",
+                  "technology": "FCM",
+                  "tags": [
+                    "push"
+                  ],
+                  "status": "active",
+                  "ownership": "Platform Team",
+                  "environment": "production"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sys-ext-card-networks",
+          "name": "Card Network Gateway",
+          "type": "system",
+          "description": "External gateway to Visa, Mastercard, and AMEX networks.",
+          "technology": "ISO 8583 / REST",
+          "tags": [
+            "external",
+            "card",
+            "visa",
+            "mastercard"
+          ],
+          "status": "active",
+          "ownership": "Third Party",
+          "environment": "production"
+        }
+      ]
+    },
+    {
+      "id": "domain-customer",
+      "name": "Customer Platform",
+      "type": "domain",
+      "description": "Customer identity, onboarding, profile management and self-service portals.",
+      "technology": "TypeScript / React",
+      "tags": [
+        "customer",
+        "identity",
+        "kyc"
+      ],
+      "status": "active",
+      "ownership": "Customer Experience Team",
+      "environment": "production",
+      "children": [
+        {
+          "id": "sys-auth",
+          "name": "Identity & Auth Service",
+          "type": "system",
+          "description": "Centralised IAM: OAuth2/OIDC, MFA, and customer identity federation.",
+          "technology": "Keycloak / Node.js",
+          "tags": [
+            "auth",
+            "iam",
+            "oauth2",
+            "oidc"
+          ],
+          "status": "active",
+          "ownership": "Security Team",
+          "environment": "production",
+          "relationships": [
+            {
+              "id": "rel-auth-bus",
+              "sourceId": "sys-auth",
+              "targetId": "cnt-event-bus",
+              "type": "publishes",
+              "description": "Publishes login/logout audit events",
+              "technology": "Kafka"
+            }
+          ],
+          "children": [
+            {
+              "id": "cnt-auth-server",
+              "name": "Auth Server (Keycloak)",
+              "type": "container",
+              "description": "OAuth2 / OpenID Connect identity provider with custom themes.",
+              "technology": "Keycloak 24",
+              "tags": [
+                "oauth2",
+                "oidc"
+              ],
+              "status": "active",
+              "ownership": "Security Team",
+              "environment": "production",
+              "children": [
+                {
+                  "id": "cmp-mfa-totp",
+                  "name": "TOTP MFA",
+                  "type": "component",
+                  "description": "Time-based OTP for second factor auth.",
+                  "technology": "Google Authenticator",
+                  "tags": [
+                    "mfa",
+                    "security"
+                  ],
+                  "status": "active",
+                  "ownership": "Security Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-social-login",
+                  "name": "Social Login",
+                  "type": "component",
+                  "description": "Google / Apple federated login.",
+                  "technology": "OIDC Federation",
+                  "tags": [
+                    "sso"
+                  ],
+                  "status": "active",
+                  "ownership": "Security Team",
+                  "environment": "production"
+                }
+              ]
+            },
+            {
+              "id": "cnt-auth-db",
+              "name": "Auth DB",
+              "type": "container",
+              "description": "Keycloak PostgreSQL backend.",
+              "technology": "PostgreSQL 15",
+              "tags": [
+                "database"
+              ],
+              "status": "active",
+              "ownership": "DBA Team",
+              "environment": "production"
+            }
+          ]
+        },
+        {
+          "id": "sys-customer-profile",
+          "name": "Customer Profile Service",
+          "type": "system",
+          "description": "KYC data, profiles, preferences and document management.",
+          "technology": "Python / FastAPI",
+          "tags": [
+            "customer",
+            "kyc",
+            "profile"
+          ],
+          "status": "active",
+          "ownership": "Customer Experience Team",
+          "environment": "production",
+          "relationships": [
+            {
+              "id": "rel-profile-auth",
+              "sourceId": "sys-customer-profile",
+              "targetId": "sys-auth",
+              "type": "uses",
+              "description": "Authenticates API calls",
+              "technology": "OIDC"
+            },
+            {
+              "id": "rel-profile-notif",
+              "sourceId": "sys-customer-profile",
+              "targetId": "sys-notifications",
+              "type": "uses",
+              "description": "Sends welcome/KYC  status  emails",
+              "technology": "REST"
+            }
+          ],
+          "children": [
+            {
+              "id": "cnt-profile-api",
+              "name": "Profile API",
+              "type": "container",
+              "description": "REST API for customer profile CRUD and KYC  status .",
+              "technology": "FastAPI + uvicorn",
+              "tags": [
+                "api"
+              ],
+              "status": "active",
+              "ownership": "Customer Experience Team",
+              "environment": "production"
+            },
+            {
+              "id": "cnt-kyc-processor",
+              "name": "KYC Processor",
+              "type": "container",
+              "description": "Orchestrates ID document verification with third-party providers.",
+              "technology": "Python / Celery",
+              "tags": [
+                "kyc",
+                "worker"
+              ],
+              "status": "active",
+              "ownership": "Customer Experience Team",
+              "environment": "production",
+              "children": [
+                {
+                  "id": "cmp-doc-verifier",
+                  "name": "Document Verifier",
+                  "type": "component",
+                  "description": "Integrates with Onfido for ID document checks.",
+                  "technology": "Onfido SDK",
+                  "tags": [
+                    "kyc"
+                  ],
+                  "status": "active",
+                  "ownership": "Customer Experience Team",
+                  "environment": "production"
+                },
+                {
+                  "id": "cmp-liveness-check",
+                  "name": "Liveness Check",
+                  "type": "component",
+                  "description": "Biometric liveness detection.",
+                  "technology": "iProov",
+                  "tags": [
+                    "biometrics",
+                    "kyc"
+                  ],
+                  "status": "active",
+                  "ownership": "Customer Experience Team",
+                  "environment": "production"
+                }
+              ]
+            },
+            {
+              "id": "cnt-profile-db",
+              "name": "Profile DB",
+              "type": "container",
+              "description": "Customer profile PostgreSQL store.",
+              "technology": "PostgreSQL 15",
+              "tags": [
+                "database"
+              ],
+              "status": "active",
+              "ownership": "DBA Team",
+              "environment": "production"
+            },
+            {
+              "id": "cnt-doc-store",
+              "name": "Document Object Store",
+              "type": "container",
+              "description": "S3-compatible store for KYC identity documents.",
+              "technology": "AWS S3",
+              "tags": [
+                "storage",
+                "s3"
+              ],
+              "status": "active",
+              "ownership": "Customer Experience Team",
+              "environment": "production"
+            }
+          ]
+        },
+        {
+          "id": "sys-web-portal",
+          "name": "Customer Web Portal",
+          "type": "system",
+          "description": "React SPA for customers to manage accounts, view transactions and initiate payments.",
+          "technology": "Next.js 15 / React 19",
+          "tags": [
+            "frontend",
+            "spa",
+            "portal"
+          ],
+          "status": "active",
+          "ownership": "Frontend Team",
+          "environment": "production",
+          "relationships": [
+            {
+              "id": "rel-portal-auth",
+              "sourceId": "sys-web-portal",
+              "targetId": "sys-auth",
+              "type": "uses",
+              "description": "OIDC login flow",
+              "technology": "OAuth2 PKCE"
+            },
+            {
+              "id": "rel-portal-payment",
+              "sourceId": "sys-web-portal",
+              "targetId": "sys-payment-processor",
+              "type": "uses",
+              "description": "Initiates payments",
+              "technology": "REST / HTTPS"
+            },
+            {
+              "id": "rel-portal-profile",
+              "sourceId": "sys-web-portal",
+              "targetId": "sys-customer-profile",
+              "type": "uses",
+              "description": "Loads customer data",
+              "technology": "REST / HTTPS"
+            }
+          ],
+          "children": [
+            {
+              "id": "cnt-web-app",
+              "name": "Next.js Web App",
+              "type": "container",
+              "description": "SSR customer banking portal.",
+              "technology": "Next.js 15",
+              "tags": [
+                "frontend",
+                "nextjs"
+              ],
+              "status": "active",
+              "ownership": "Frontend Team",
+              "environment": "production"
+            },
+            {
+              "id": "cnt-web-cdn",
+              "name": "CDN",
+              "type": "container",
+              "description": "CloudFront CDN for static assets.",
+              "technology": "CloudFront",
+              "tags": [
+                "cdn",
+                "aws"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sys-shared-infra",
+      "name": "Shared Infrastructure",
+      "type": "system",
+      "description": "Cross-cutting concerns: event bus, observability, logging, and monitoring.",
+      "technology": "Kubernetes / AWS EKS",
+      "tags": [
+        "infrastructure",
+        "shared",
+        "platform"
+      ],
+      "status": "active",
+      "ownership": "Platform Team",
+      "environment": "production",
+      "children": [
+        {
+          "id": "cnt-event-bus",
+          "name": "Event Bus (Kafka)",
+          "type": "container",
+          "description": "Central Kafka cluster for all async event-driven communication.",
+          "technology": "Apache Kafka 3.7",
+          "tags": [
+            "kafka",
+            "messaging",
+            "event-streaming"
+          ],
+          "status": "active",
+          "ownership": "Platform Team",
+          "environment": "production",
+          "children": [
+            {
+              "id": "cmp-topic-txn",
+              "name": "transactions Topic",
+              "type": "component",
+              "description": "High-throughput topic for all financial transactions.",
+              "technology": "Kafka Topic",
+              "tags": [
+                "kafka"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            },
+            {
+              "id": "cmp-topic-fraud",
+              "name": "fraud-alerts Topic",
+              "type": "component",
+              "description": "Fraud and risk alert events.",
+              "technology": "Kafka Topic",
+              "tags": [
+                "kafka",
+                "fraud"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            },
+            {
+              "id": "cmp-topic-audit",
+              "name": "audit-log Topic",
+              "type": "component",
+              "description": "Immutable audit trail events.",
+              "technology": "Kafka Topic",
+              "tags": [
+                "kafka",
+                "audit"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            }
+          ]
+        },
+        {
+          "id": "cnt-observability",
+          "name": "Observability Stack",
+          "type": "container",
+          "description": "Prometheus + Grafana + Loki for metrics, traces and logs.",
+          "technology": "Prometheus / Grafana / Loki",
+          "tags": [
+            "monitoring",
+            "observability"
+          ],
+          "status": "active",
+          "ownership": "Platform Team",
+          "environment": "production",
+          "children": [
+            {
+              "id": "cmp-prometheus",
+              "name": "Prometheus",
+              "type": "component",
+              "description": "Metrics scraping and alerting.",
+              "technology": "Prometheus 2.52",
+              "tags": [
+                "monitoring"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            },
+            {
+              "id": "cmp-grafana",
+              "name": "Grafana",
+              "type": "component",
+              "description": "Dashboard visualization.",
+              "technology": "Grafana 11",
+              "tags": [
+                "dashboard"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            },
+            {
+              "id": "cmp-loki",
+              "name": "Loki",
+              "type": "component",
+              "description": "Aggregated log storage and query.",
+              "technology": "Loki 3",
+              "tags": [
+                "logging"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            },
+            {
+              "id": "cmp-otel",
+              "name": "OpenTelemetry Collector",
+              "type": "component",
+              "description": "Distributed tracing collection and forwarding.",
+              "technology": "OpenTelemetry",
+              "tags": [
+                "tracing"
+              ],
+              "status": "active",
+              "ownership": "Platform Team",
+              "environment": "production"
+            }
+          ]
+        },
+        {
+          "id": "cnt-k8s",
+          "name": "Kubernetes Cluster (EKS)",
+          "type": "container",
+          "description": "AWS EKS multi-AZ Kubernetes cluster hosting all workloads.",
+          "technology": "AWS EKS 1.30",
+          "tags": [
+            "kubernetes",
+            "aws",
+            "infrastructure"
+          ],
+          "status": "active",
+          "ownership": "Platform Team",
+          "environment": "production"
+        },
+        {
+          "id": "cnt-vault",
+          "name": "HashiCorp Vault",
+          "type": "container",
+          "description": "Secrets management and PKI for all services.",
+          "technology": "Vault 1.17",
+          "tags": [
+            "secrets",
+            "pki",
+            "security"
+          ],
+          "status": "active",
+          "ownership": "Security Team",
+          "environment": "production"
+        }
+      ]
+    }
+  ]
+}

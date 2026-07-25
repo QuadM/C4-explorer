@@ -10,7 +10,7 @@ import {
   CloudLightning,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
+
 } from "lucide-react";
 import { useArchitectureStore } from "../../store/architectureStore";
 import { ArchitectureNode, NodeType } from "../../types";
@@ -97,18 +97,26 @@ interface CustomNodeProps {
   data: {
     node: ArchitectureNode;
     isExpanded: boolean;
-    isSelected: boolean;
     isFiltered: boolean;
-    isConnected: boolean;
-    hasSelectedNode: boolean;
   };
 }
 
 export const CustomNode = memo(({ data }: CustomNodeProps) => {
-  const { node, isExpanded, isSelected, isFiltered, isConnected, hasSelectedNode } = data;
-  const drillDown = useArchitectureStore((state) => state.drillDown);
+  const { node, isExpanded, isFiltered } = data;
   const selectNode = useArchitectureStore((state) => state.selectNode);
   const toggleNodeExpanded = useArchitectureStore((state) => state.toggleNodeExpanded);
+  const selectedNodeId = useArchitectureStore((state) => state.selectedNodeId);
+  const relationships = useArchitectureStore((state) => state.allRelationships);
+
+  const isSelected = selectedNodeId === node.id;
+  const hasSelectedNode = selectedNodeId !== null;
+  const isConnected = hasSelectedNode && !isSelected
+    ? relationships.some(
+        (rel) =>
+          (rel.sourceId === selectedNodeId && rel.targetId === node.id) ||
+          (rel.targetId === selectedNodeId && rel.sourceId === node.id)
+      )
+    : false;
 
   const config = nodeConfig[node.type] || nodeConfig.module;
   const Icon = config.icon;
@@ -116,7 +124,7 @@ export const CustomNode = memo(({ data }: CustomNodeProps) => {
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (node.children && node.children.length > 0) {
-      drillDown(node.id);
+      toggleNodeExpanded(node.id);
     }
   };
 
@@ -137,27 +145,29 @@ export const CustomNode = memo(({ data }: CustomNodeProps) => {
     ? `ring-2 ring-offset-2 ring-offset-slate-950 ring-white shadow-lg`
     : "";
 
-  // Dynamic borders for expanded groups
+  // Expanded group — renders as a transparent container; children are separate RF nodes inside it
   if (isExpanded) {
     return (
       <div
-        className={`w-full h-full rounded-2xl border-2 border-dashed ${config.borderClass} ${config.bgClass} p-4 transition-all duration-300 relative group flex flex-col`}
+        className={`w-full h-full rounded-2xl border-2 border-dashed ${config.borderClass} bg-slate-950 ${config.bgClass} transition-all duration-300 relative flex flex-col`}
         onClick={handleSingleClick}
+        onDoubleClick={handleDoubleClick}
       >
-        {/* Handles for connections */}
+        {/* Handles for connections on the group boundary */}
         <Handle type="target" position={Position.Top} className="!bg-slate-400 opacity-20" />
         <Handle type="source" position={Position.Bottom} className="!bg-slate-400 opacity-20" />
         <Handle type="target" position={Position.Left} className="!bg-slate-400 opacity-20" />
         <Handle type="source" position={Position.Right} className="!bg-slate-400 opacity-20" />
 
-        <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2 select-none">
+        {/* Sticky group header */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 select-none shrink-0">
           <div className="flex items-center gap-2">
             <Icon className={`w-5 h-5 ${config.textClass}`} />
             <div>
               <div className="text-[10px] uppercase tracking-wider font-semibold opacity-60">
                 {config.label}
               </div>
-              <div className="text-sm font-bold text-white leading-tight">
+              <div className="text-sm font-bold text-white leading-tight truncate max-w-[220px]">
                 {node.name}
               </div>
             </div>
@@ -172,24 +182,23 @@ export const CustomNode = memo(({ data }: CustomNodeProps) => {
             <button
               onClick={handleExpandToggle}
               className="p-1 rounded bg-white/5 hover:bg-white/10 text-white transition-colors"
-              title="Collapse Node"
+              title="Collapse"
             >
               <ChevronUp className="w-4 h-4" />
             </button>
           </div>
         </div>
-
-        {/* Children Rendered Inside (Controlled by React Flow Layout parentId) */}
-        <div className="flex-1 min-h-0 pointer-events-none" />
+        {/* Children are rendered by React Flow as separate nodes with parentId — this area is their canvas */}
       </div>
     );
   }
+
 
   return (
     <div
       onDoubleClick={handleDoubleClick}
       onClick={handleSingleClick}
-      className={`w-[260px] h-[120px] rounded-xl border ${config.borderClass} ${config.bgClass} ${ringClass} ${opacityClass} p-3.5 flex flex-col justify-between cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative shadow-xl hover:shadow-2xl overflow-hidden`}
+      className={`w-[260px] h-[120px] rounded-xl border ${config.borderClass} bg-slate-950 ${config.bgClass} ${ringClass} ${opacityClass} p-3.5 flex flex-col justify-between cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 relative shadow-xl hover:shadow-2xl overflow-hidden`}
     >
       {/* Glow highlight background */}
       <div className={`absolute -right-16 -top-16 w-32 h-32 bg-gradient-to-br ${config.colorClass} opacity-10 rounded-full blur-xl`} />
@@ -221,15 +230,10 @@ export const CustomNode = memo(({ data }: CustomNodeProps) => {
             <button
               onClick={handleExpandToggle}
               className="p-1 rounded bg-white/5 hover:bg-white/10 text-white transition-colors"
-              title="Expand Node"
+              title="Expand/Collapse Node"
             >
               <ChevronDown className="w-3 h-3" />
             </button>
-          )}
-          {node.children && node.children.length > 0 && (
-            <div className="p-1 rounded bg-white/5 text-white/50" title="Double click to drill down">
-              <ExternalLink className="w-3 h-3" />
-            </div>
           )}
         </div>
       </div>

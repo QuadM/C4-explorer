@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   ReactFlow,
   Background,
@@ -10,6 +10,8 @@ import {
   BackgroundVariant,
   Node,
   Edge,
+  NodeChange,
+  applyNodeChanges,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,16 +40,19 @@ function GraphCanvasInner() {
   const currentPath = useArchitectureStore((state) => state.currentPath);
   const layoutPreference = useArchitectureStore((state) => state.layoutPreference);
   const expandedNodes = useArchitectureStore((state) => state.expandedNodes);
-  const selectedNodeId = useArchitectureStore((state) => state.selectedNodeId);
   const filters = useArchitectureStore((state) => state.filters);
   const selectNode = useArchitectureStore((state) => state.selectNode);
-
   const rootNode = useArchitectureStore((state) => state.rootNode);
+
+  // Allow dragging — React Flow calls this whenever nodes move
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, []);
 
   // Compute graph layout asynchronously using ELK.js
   useEffect(() => {
     let isMounted = true;
-    
+
     const runLayout = async () => {
       setIsPending(true);
       try {
@@ -57,21 +62,20 @@ function GraphCanvasInner() {
           visible.relationships,
           layoutPreference,
           expandedNodes,
-          selectedNodeId,
           filters
         );
-        
+
         if (!isMounted) return;
-        
+
         setNodes(layout.nodes);
         setEdges(layout.edges);
 
-        // Fit to screen with slight delay to allow rendering
+        // Fit to screen after layout settles
         setTimeout(() => {
           if (isMounted) {
-            fitView({ padding: 0.25, duration: 800 });
+            fitView({ padding: 0.2, duration: 600 });
           }
-        }, 50);
+        }, 80);
       } catch (error) {
         console.error("Layout error:", error);
       } finally {
@@ -80,14 +84,14 @@ function GraphCanvasInner() {
         }
       }
     };
-    
+
     runLayout();
-    
+
     return () => {
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getVisibleElements, rootNode, currentPath, layoutPreference, expandedNodes, selectedNodeId, filters]);
+  }, [getVisibleElements, rootNode, currentPath, layoutPreference, expandedNodes, filters]);
 
   // Click on background deselects node
   const handlePaneClick = () => {
@@ -95,7 +99,7 @@ function GraphCanvasInner() {
   };
 
   const handleFitView = () => {
-    fitView({ padding: 0.25, duration: 600 });
+    fitView({ padding: 0.2, duration: 600 });
   };
 
   const pathKey = currentPath.join("/");
@@ -112,7 +116,7 @@ function GraphCanvasInner() {
         </div>
       )}
 
-      {/* Animation wrapper for zoom/drill transitions */}
+      {/* Animation wrapper */}
       <AnimatePresence mode="wait">
         <motion.div
           key={pathKey}
@@ -127,13 +131,15 @@ function GraphCanvasInner() {
             edges={edges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
             onPaneClick={handlePaneClick}
             fitView
             minZoom={0.05}
             maxZoom={2}
             className="w-full h-full"
+            elevateNodesOnSelect={true}
           >
-            {/* Custom Grid */}
+            {/* Dot grid background */}
             <Background
               variant={BackgroundVariant.Dots}
               gap={16}
@@ -141,13 +147,13 @@ function GraphCanvasInner() {
               color="rgba(148, 163, 184, 0.08)"
             />
 
-            {/* Custom controls aligned bottom right */}
+            {/* Controls — bottom right */}
             <Controls
               showInteractive={false}
               className="!bg-slate-900/90 !border-slate-800 !shadow-lg [&>button]:!bg-transparent [&>button]:!border-slate-800 [&>button]:!text-slate-400 hover:[&>button]:!bg-slate-800 hover:[&>button]:!text-slate-200"
             />
 
-            {/* Premium MiniMap aligned bottom left */}
+            {/* MiniMap — bottom left */}
             <MiniMap
               zoomable
               pannable
@@ -167,7 +173,7 @@ function GraphCanvasInner() {
               maskStrokeWidth={1.5}
             />
 
-            {/* Fit to View Quick Action */}
+            {/* Fit View button — top right */}
             <Panel position="top-right" className="flex items-center gap-2">
               <button
                 onClick={handleFitView}
@@ -179,12 +185,12 @@ function GraphCanvasInner() {
               </button>
             </Panel>
 
-            {/* Interactive shortcuts info panel */}
+            {/* Shortcut hints — bottom center */}
             <Panel position="bottom-center" className="hidden lg:block select-none pointer-events-none">
               <div className="flex items-center gap-5 px-4 py-1.5 rounded-full border border-slate-900/60 bg-slate-950/80 backdrop-blur-md text-[10px] text-slate-500 font-medium">
-                <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[9px]">Double-Click</kbd> Drill Down</span>
+                <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[9px]">Double-Click</kbd> Expand / Collapse</span>
                 <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[9px]">Single-Click</kbd> Inspect</span>
-                <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[9px]">Backspace</kbd> Level Up</span>
+                <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[9px]">Drag</kbd> Move</span>
                 <span className="flex items-center gap-1"><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 text-[9px]">/</kbd> Search</span>
               </div>
             </Panel>

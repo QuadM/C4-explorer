@@ -14,7 +14,7 @@ import { useArchitectureStore } from "../store/architectureStore";
 export function useKeyboardShortcuts() {
   const selectedNodeId = useArchitectureStore((s) => s.selectedNodeId);
   const selectNode = useArchitectureStore((s) => s.selectNode);
-  const drillDown = useArchitectureStore((s) => s.drillDown);
+  const toggleNodeExpanded = useArchitectureStore((s) => s.toggleNodeExpanded);
   const navigateUp = useArchitectureStore((s) => s.navigateUp);
   const getNodeById = useArchitectureStore((s) => s.getNodeById);
 
@@ -38,7 +38,7 @@ export function useKeyboardShortcuts() {
           if (selectedNodeId) {
             const node = getNodeById(selectedNodeId);
             if (node?.children && node.children.length > 0) {
-              drillDown(selectedNodeId);
+              toggleNodeExpanded(selectedNodeId);
             }
           }
           break;
@@ -50,5 +50,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedNodeId, selectNode, drillDown, navigateUp, getNodeById]);
+  }, [selectedNodeId, selectNode, toggleNodeExpanded, navigateUp, getNodeById]);
 }
