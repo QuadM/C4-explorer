@@ -18,12 +18,18 @@ const colorMap: Record<NodeType, string> = {
 export function Search() {
   const searchQuery = useArchitectureStore((state) => state.searchQuery);
   const setSearchQuery = useArchitectureStore((state) => state.setSearchQuery);
-  const getSearchResults = useArchitectureStore((state) => state.getSearchResults);
+  const getSearchResults = useArchitectureStore(
+    (state) => state.getSearchResults,
+  );
   const setPath = useArchitectureStore((state) => state.setPath);
   const selectNode = useArchitectureStore((state) => state.selectNode);
 
-  const layoutPreference = useArchitectureStore((state) => state.layoutPreference);
-  const setLayoutPreference = useArchitectureStore((state) => state.setLayoutPreference);
+  const layoutPreference = useArchitectureStore(
+    (state) => state.layoutPreference,
+  );
+  const setLayoutPreference = useArchitectureStore(
+    (state) => state.setLayoutPreference,
+  );
 
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -73,7 +79,14 @@ export function Search() {
     setIsOpen(false);
   };
 
-  const handleSelect = (res: { id: string, path: string[], name: string, description?: string, type: NodeType, technology?: string }) => {
+  const handleSelect = (res: {
+    id: string;
+    path: string[];
+    name: string;
+    description?: string;
+    type: NodeType;
+    technology?: string;
+  }) => {
     // Navigate to parent, select node
     const parentPath = res.path.slice(0, -1);
     setPath(parentPath);
@@ -86,7 +99,7 @@ export function Search() {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 px-4 py-3 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 shrink-0 select-none">
+    <div className="flex items-center justify-between gap-4 px-4 py-3 bg-slate-950/80 backdrop-blur-md border-b border-slate-900 shrink-0 select-none z-50">
       {/* Search Input Box */}
       <div className="relative w-72 lg:w-96">
         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-500">
@@ -117,7 +130,7 @@ export function Search() {
         {isOpen && searchQuery && (
           <div
             ref={resultsRef}
-            className="absolute left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl max-h-96 overflow-y-auto z-[100] p-1.5 scrollbar-thin"
+            className="absolute left-0 right-0 mt-2 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl max-h-96 overflow-y-auto z-100 p-1.5 scrollbar-thin"
           >
             {results.length > 0 ? (
               <div className="space-y-0.5">
@@ -141,7 +154,9 @@ export function Search() {
                           {res.technology}
                         </span>
                       )}
-                      <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${colorMap[res.type]}`}>
+                      <span
+                        className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${colorMap[res.type]}`}
+                      >
                         {res.type}
                       </span>
                     </div>
@@ -164,19 +179,21 @@ export function Search() {
           <span>Layout:</span>
         </div>
         <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-          {(["layered", "force", "radial", "tree"] as LayoutType[]).map((layout) => (
-            <button
-              key={layout}
-              onClick={() => setLayoutPreference(layout)}
-              className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md font-semibold transition-all ${
-                layoutPreference === layout
-                  ? "bg-slate-800 text-sky-400 shadow-sm"
-                  : "text-slate-500 hover:text-slate-300"
-              }`}
-            >
-              {layout}
-            </button>
-          ))}
+          {(["layered", "force", "radial", "tree"] as LayoutType[]).map(
+            (layout) => (
+              <button
+                key={layout}
+                onClick={() => setLayoutPreference(layout)}
+                className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  layoutPreference === layout
+                    ? "bg-slate-800 text-sky-400 shadow-sm"
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                {layout}
+              </button>
+            ),
+          )}
         </div>
       </div>
     </div>
